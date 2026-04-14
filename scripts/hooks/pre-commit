@@ -1,0 +1,87 @@
+#!/bin/bash
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+echo "========================================="
+echo "Running pre-commit checks"
+echo "========================================="
+echo ""
+
+# Get staged Swift files
+STAGED_SWIFT_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.swift$' || true)
+
+if [ -z "$STAGED_SWIFT_FILES" ]; then
+    echo "No staged Swift files. Skipping checks."
+    exit 0
+fi
+
+echo "Staged Swift files:"
+echo "$STAGED_SWIFT_FILES"
+echo ""
+
+# 1. Secret scanning
+echo "-----------------------------------------"
+echo "Step 1: Secret scanning"
+echo "-----------------------------------------"
+"$REPO_ROOT/scripts/security/check-secrets.sh" $STAGED_SWIFT_FILES
+
+# 2. SAST scanning
+echo ""
+echo "-----------------------------------------"
+echo "Step 2: SAST scanning"
+echo "-----------------------------------------"
+"$REPO_ROOT/scripts/security/check-sast.sh" $STAGED_SWIFT_FILES
+
+# 3. SwiftLint
+echo ""
+echo "-----------------------------------------"
+echo "Step 3: SwiftLint"
+echo "-----------------------------------------"
+if command -v swiftlint &> /dev/null; then
+    echo "Running SwiftLint on staged files..."
+    LINT_FAILED=0
+    for FILE in $STAGED_SWIFT_FILES; do
+        swiftlint lint --config "$REPO_ROOT/.swiftlint.yml" --strict "$FILE" 2>/dev/null || LINT_FAILED=1
+    done
+    if [ $LINT_FAILED -ne 0 ]; then
+        echo ""
+        echo "========================================="
+        echo "SWIFTLINT ERRORS FOUND!"
+        echo "========================================="
+        echo "Please fix the issues above before committing."
+        exit 1
+    fi
+    echo "SwiftLint passed."
+else
+    echo "WARNING: SwiftLint not installed. Run 'make setup' to install."
+    echo "Skipping lint check."
+fi
+
+# 4. Build
+echo ""
+echo "-----------------------------------------"
+echo "Step 4: Build"
+echo "-----------------------------------------"
+echo "Building project..."
+"$REPO_ROOT/scripts/build.sh"
+
+# 5. Tests with coverage
+echo ""
+echo "-----------------------------------------"
+echo "Step 5: Tests with coverage"
+echo "-----------------------------------------"
+echo "Running tests with coverage..."
+"$REPO_ROOT/scripts/test-coverage.sh"
+
+# 6. Coverage threshold check
+echo ""
+echo "-----------------------------------------"
+echo "Step 6: Coverage threshold check"
+echo "-----------------------------------------"
+"$REPO_ROOT/scripts/check-coverage.sh" $STAGED_SWIFT_FILES
+
+echo ""
+echo "========================================="
+echo "All pre-commit checks passed."
+echo "========================================="

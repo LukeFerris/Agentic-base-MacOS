@@ -10,11 +10,7 @@
           },
           {
             "type": "command",
-            "command": "./scripts/install-infra-tools.sh"
-          },
-          {
-            "type": "command",
-            "command": "yarn install"
+            "command": "./scripts/setup.sh"
           }
         ]
       }
