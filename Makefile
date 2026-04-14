@@ -24,8 +24,7 @@ test: generate ## Run tests
 	@xcodebuild test \
 		-project $(PROJECT) \
 		-scheme $(SCHEME) \
-		-configuration Debug \
-		-quiet
+		-configuration Debug
 
 test-coverage: generate ## Run tests with coverage
 	@bash scripts/test-coverage.sh

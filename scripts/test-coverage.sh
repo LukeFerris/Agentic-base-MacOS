@@ -19,7 +19,6 @@ xcodebuild test \
     -configuration Debug \
     -derivedDataPath "$DERIVED_DATA" \
     -enableCodeCoverage YES \
-    -quiet \
     2>&1
 
 echo ""

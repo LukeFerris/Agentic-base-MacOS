@@ -42,7 +42,7 @@ if command -v swiftlint &> /dev/null; then
     echo "Running SwiftLint on staged files..."
     LINT_FAILED=0
     for FILE in $STAGED_SWIFT_FILES; do
-        swiftlint lint --config "$REPO_ROOT/.swiftlint.yml" --strict "$FILE" 2>/dev/null || LINT_FAILED=1
+        swiftlint lint --config "$REPO_ROOT/.swiftlint.yml" --strict "$FILE" || LINT_FAILED=1
     done
     if [ $LINT_FAILED -ne 0 ]; then
         echo ""
